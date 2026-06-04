@@ -5,6 +5,13 @@ import Button from "../../components/ui/Button";
 import { Card, CardBody } from "../../components/ui/Card";
 import { createProject } from "../../services/projectApi";
 
+// ─── SVG Icons ────────────────────────────────────────────────────────────────
+const IconCheck = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+  </svg>
+);
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DIGITAL_NEEDS = [
@@ -29,54 +36,57 @@ const SECTORS = [
   "Khác",
 ];
 
-const BUDGET_RANGES = [
-  { label: "< 200 triệu VND", value: 150_000_000 },
-  { label: "200 – 500 triệu VND", value: 350_000_000 },
-  { label: "500 triệu – 1 tỷ VND", value: 750_000_000 },
-  { label: "> 1 tỷ VND", value: 1_500_000_000 },
-  { label: "Chưa xác định", value: 0 },
-];
-
 const URGENCY_OPTIONS = [
   { value: "urgent", label: "Khẩn cấp (< 3 tháng)", monthsOut: 3 },
   { value: "normal", label: "Bình thường (3 – 9 tháng)", monthsOut: 6 },
   { value: "planning", label: "Lên kế hoạch (> 9 tháng)", monthsOut: 12 },
 ];
 
+const SERVICE_GROUPS = [
+  {
+    groupName: "Nhóm A — Dịch vụ môi giới kết nối (Thu từ SME + ĐH)",
+    packages: [
+      { id: "A1", name: "Kết nối thử nghiệm", price: "20–35tr", desc: "SME có bài toán cụ thể, kết nối với 1–2 khoa/lab phù hợp, hỗ trợ buổi pitch đầu tiên.", features: ["Phân tích nhu cầu SME", "Mapping trường ĐH", "Tổ chức 1 buổi gặp mặt", "Báo cáo kết quả"] },
+      { id: "A2", name: "Kết nối hợp tác R&D", price: "60–100tr", desc: "Dẫn dắt toàn bộ quy trình đàm phán hợp đồng R&D, chuyển giao công nghệ.", features: ["Due diligence năng lực", "Thiết kế scope hợp tác", "Đàm phán MOU/Hợp đồng", "Theo dõi 3 tháng đầu"] },
+      { id: "A3", name: "Hệ sinh thái đối tác", price: "120–180tr", desc: "Xây dựng mạng lưới đối tác chiến lược bền vững giữa nhóm SME và nhóm trường ĐH.", features: ["Quản lý quan hệ 2 phía", "2 Innovation Day/năm", "Báo cáo impact hàng quý", "Ưu tiên kết nối mới"] }
+    ]
+  },
+  {
+    groupName: "Nhóm B — Tư vấn đổi mới (Thu từ SME)",
+    packages: [
+      { id: "B1", name: "Innovation Audit", price: "15–25tr", desc: "Đánh giá nhu cầu đổi mới thực sự của SME — xác định bài toán cụ thể cần giải.", features: ["Phỏng vấn founder + team", "Phân tích mô hình KD", "Roadmap đổi mới 6 tháng", "Đề xuất hướng hợp tác ĐH"] },
+      { id: "B2", name: "Chiến lược đổi mới", price: "40–70tr", desc: "Xây chiến lược đổi mới 12–24 tháng gắn với KPI kinh doanh.", features: ["Workshop Design Thinking", "Phân tích thị trường", "Roadmap + OKR đổi mới", "Xác định 2-3 đối tác ĐH"] },
+      { id: "B3", name: "Coaching hàng tháng", price: "20–35tr", desc: "Đồng hành thực thi đổi mới, kết nối nguồn lực ĐH theo từng giai đoạn.", features: ["4 buổi coaching 1:1/tháng", "Review OKR hàng tháng", "Kết nối chuyên gia", "Hỗ trợ pitch gọi vốn"] }
+    ]
+  }
+];
+
 const INITIAL_FORM = {
-  companyName: "",
-  contactName: "",
-  email: "",
-  phone: "",
-  sector: "",
-  employeeCount: "",
-  digitalNeeds: [],
-  painPoint: "",
-  budget: "",
-  urgency: "",
-  hasItTeam: "",
+  companyName: "", contactName: "", email: "", phone: "",
+  sector: "", employeeCount: "", digitalNeeds: [], painPoint: "",
+  selectedPackage: "", // Cập nhật trường này
+  urgency: "", hasItTeam: "",
 };
+
+
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Chuyển form state → body cho POST /api/projects */
 function mapFormToPayload(form) {
   const urgencyOption = URGENCY_OPTIONS.find((u) => u.value === form.urgency);
-  const budgetOption = BUDGET_RANGES.find((b) => b.label === form.budget);
-
-  // Tính deadline từ mức độ ưu tiên
   const deadlineDate = new Date();
   deadlineDate.setMonth(deadlineDate.getMonth() + (urgencyOption?.monthsOut ?? 6));
-  const deadline = deadlineDate.toISOString().split("T")[0]; // "YYYY-MM-DD"
+  const deadline = deadlineDate.toISOString().split("T")[0];
 
   return {
-    sme_id: "SME-001", // hardcoded cho MVP – sẽ lấy từ auth context sau
+    sme_id: "SME-001", 
     title: `[${form.sector}] Dự án CĐS – ${form.companyName}`,
     description: form.painPoint.trim(),
     required_specialties: form.digitalNeeds,
-    budget: budgetOption?.value ?? 0,
+    service_package: form.selectedPackage, // Gửi mã gói (Ví dụ: "A1", "B2") về Backend
     deadline,
-    // Metadata phụ – backend có thể bỏ qua nếu chưa hỗ trợ
     meta: {
       company_name: form.companyName,
       contact_name: form.contactName,
@@ -315,49 +325,71 @@ function Step2({ form, set, errors }) {
 
 function Step3({ form, set, errors }) {
   return (
-    <div className="space-y-5">
-      <h2 className="text-lg font-semibold text-gray-800">
-        Ngân sách & Mức độ ưu tiên
+    <div className="space-y-8">
+      <h2 className="text-lg font-semibold text-gray-800 border-b pb-2">
+        Dịch vụ & Mức độ ưu tiên
       </h2>
 
-      <InputField label="Ngân sách dự kiến" required error={errors.budget}>
-        <div className="grid grid-cols-1 gap-2 mt-1">
-          {BUDGET_RANGES.map((b) => (
-            <label
-              key={b.label}
-              className={[
-                "flex items-center gap-3 px-4 py-3 rounded-md border cursor-pointer transition-all duration-150 select-none text-sm",
-                form.budget === b.label
-                  ? "border-blue-500 bg-blue-50 text-blue-800 font-medium"
-                  : "border-gray-200 text-gray-700 hover:border-blue-300",
-              ].join(" ")}
-            >
-              <input
-                type="radio"
-                className="accent-blue-600"
-                checked={form.budget === b.label}
-                onChange={() => set("budget", b.label)}
-              />
-              {b.label}
-            </label>
+      {/* Lựa chọn gói dịch vụ */}
+      <InputField label="Lựa chọn gói dịch vụ phù hợp" required error={errors.selectedPackage}>
+        <div className="space-y-6 mt-3">
+          {SERVICE_GROUPS.map((group, gIdx) => (
+            <div key={gIdx} className="bg-white rounded-xl p-5 border border-gray-200">
+              <h4 className="text-sm font-bold text-blue-800 mb-4 uppercase tracking-wide">
+                {group.groupName}
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {group.packages.map((pkg) => {
+                  const isSelected = form.selectedPackage === pkg.id;
+                  return (
+                    <div 
+                      key={pkg.id}
+                      onClick={() => set("selectedPackage", pkg.id)}
+                      className={`relative cursor-pointer transition-all duration-200 border-2 rounded-xl p-4 flex flex-col h-full ${
+                        isSelected 
+                          ? 'border-blue-600 bg-blue-50/30 shadow-md' 
+                          : 'border-gray-100 hover:border-blue-300'
+                      }`}
+                    >
+                      {isSelected && (
+                        <div className="absolute top-3 right-3 bg-blue-600 text-white rounded-full p-0.5">
+                          <IconCheck />
+                        </div>
+                      )}
+                      
+                      <div className="mb-2 pr-6">
+                        <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-bold rounded mb-2">{pkg.id}</span>
+                        <h5 className="font-bold text-gray-900 leading-tight">{pkg.name}</h5>
+                      </div>
+                      <div className="text-blue-600 font-semibold text-sm mb-2">{pkg.price}</div>
+                      <p className="text-xs text-gray-500 mb-4 flex-grow">{pkg.desc}</p>
+                      
+                      <ul className="space-y-1.5 mt-auto pt-3 border-t border-gray-100">
+                        {pkg.features.map((feat, i) => (
+                          <li key={i} className="text-[11px] text-gray-600 flex items-start gap-1">
+                            <span className="text-emerald-500 mt-0.5">•</span>
+                            <span className="leading-tight">{feat}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </div>
       </InputField>
 
-      <InputField
-        label="Mức độ ưu tiên triển khai"
-        required
-        error={errors.urgency}
-      >
+      {/* Mức độ ưu tiên */}
+      <InputField label="Mức độ ưu tiên triển khai" required error={errors.urgency}>
         <div className="flex flex-col gap-2 mt-1">
           {URGENCY_OPTIONS.map(({ value, label }) => (
             <label
               key={value}
               className={[
                 "flex items-center gap-3 px-4 py-3 rounded-md border cursor-pointer transition-all duration-150 select-none text-sm",
-                form.urgency === value
-                  ? "border-blue-500 bg-blue-50 text-blue-800 font-medium"
-                  : "border-gray-200 text-gray-700 hover:border-blue-300",
+                form.urgency === value ? "border-blue-500 bg-blue-50 text-blue-800 font-medium" : "border-gray-200 text-gray-700 hover:border-blue-300",
               ].join(" ")}
             >
               <input
@@ -371,20 +403,12 @@ function Step3({ form, set, errors }) {
           ))}
         </div>
       </InputField>
-
+      
       {/* Summary */}
-      <div className="rounded-md bg-gray-50 border border-gray-200 p-4 space-y-2 text-sm">
+      <div className="rounded-md bg-gray-50 border border-gray-200 p-4 space-y-2 text-sm mt-6">
         <p className="font-semibold text-gray-700 mb-2">Tóm tắt khảo sát</p>
-        {[
-          ["Doanh nghiệp", form.companyName],
-          ["Ngành", form.sector],
-          ["Nhu cầu", form.digitalNeeds.join(", ")],
-        ].map(([k, v]) => (
-          <div key={k} className="flex gap-2 flex-wrap">
-            <span className="text-gray-500">{k}:</span>
-            <span className="font-medium text-gray-800">{v || "—"}</span>
-          </div>
-        ))}
+        <div className="flex gap-2 flex-wrap"><span className="text-gray-500">Gói dịch vụ:</span><span className="font-medium text-gray-800">{form.selectedPackage || "—"}</span></div>
+        <div className="flex gap-2 flex-wrap"><span className="text-gray-500">Mức độ ưu tiên:</span><span className="font-medium text-gray-800">{URGENCY_OPTIONS.find(u => u.value === form.urgency)?.label || "—"}</span></div>
       </div>
     </div>
   );
@@ -418,17 +442,16 @@ export default function InnovationAudit() {
     2: () => {
       const e = {};
       if (form.digitalNeeds.length === 0) e.digitalNeeds = "Vui lòng chọn ít nhất một nhu cầu.";
-      if (form.painPoint.trim().length < 20) e.painPoint = "Mô tả tối thiểu 20 ký tự.";
+      if (form.painPoint.trim().length < 10) e.painPoint = "Mô tả tối thiểu 10 ký tự.";
       return e;
     },
     3: () => {
-      const e = {};
-      if (!form.budget) e.budget = "Vui lòng chọn ngân sách.";
-      if (!form.urgency) e.urgency = "Vui lòng chọn mức độ ưu tiên.";
-      return e;
-    },
-  };
-
+          const e = {};
+          if (!form.selectedPackage) e.selectedPackage = "Vui lòng chọn một gói dịch vụ.";
+          if (!form.urgency) e.urgency = "Vui lòng chọn mức độ ưu tiên.";
+          return e;
+        },
+      };
   const handleNext = () => {
     const e = validators[step]?.() ?? {};
     if (Object.keys(e).length > 0) { setErrors(e); return; }

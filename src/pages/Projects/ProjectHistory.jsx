@@ -1,14 +1,11 @@
 // src/pages/Projects/ProjectHistory.jsx
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../contexts/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { getProjectsBySme } from '../../services/projectApi';
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const SME_ID = 'SME-001'; // MVP hardcode – sẽ lấy từ auth context sau
 
 // Thay vì dùng string đơn giản, hãy cấu hình mảng TABS như sau:
 const TABS = [
@@ -275,6 +272,7 @@ const ErrorBanner = ({ message, onRetry }) => (
 
 const ProjectHistory = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useContext(AuthContext);
 
   // ── State ──
   const [projects, setProjects]   = useState([]);
@@ -284,10 +282,16 @@ const ProjectHistory = () => {
 
   // ── Fetch data ──
   const fetchProjects = async () => {
+    if (!isAuthenticated || !user?.id) {
+      setError('Vui lòng đăng nhập để xem dự án của bạn.');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const data = await getProjectsBySme(SME_ID);
+      const data = await getProjectsBySme(user.id);
       setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('[ProjectHistory] fetchProjects error:', err);
@@ -299,7 +303,7 @@ const ProjectHistory = () => {
 
   useEffect(() => {
     fetchProjects();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
 // ── Derived state ──
   const tabCounts = useMemo(() => {
@@ -349,9 +353,9 @@ const ProjectHistory = () => {
               Lịch sử dự án
             </h1>
             <p className="mt-1 text-sm text-slate-500">
-              Quản lý toàn bộ dự án đã đăng · SME ID:&nbsp;
+              Quản lý toàn bộ dự án đã đăng · Tài khoản:&nbsp;
               <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-600">
-                {SME_ID}
+                {user?.name || 'N/A'} ({user?.id || 'N/A'})
               </code>
             </p>
           </div>

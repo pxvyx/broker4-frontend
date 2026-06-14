@@ -59,6 +59,19 @@ export const getProjectsBySme = async (smeId) => {
   return response;
 };
 
+/**
+ * Cập nhật trạng thái của project.
+ *
+ * @param {string} projectId - ID của project
+ * @param {string} newStatus - Trạng thái mới (Pending | Negotiating | In Progress | Completed)
+ * @returns {Promise<Object>} Updated project object
+ */
+export const updateProjectStatus = async (projectId, newStatus) => {
+  return apiClient.patch(`/projects/${projectId}/status`, {
+    status: newStatus,
+  });
+};
+
 export async function getAllExperts() {
   return apiClient.get(`/experts`); // Gọi API bạn vừa thêm ở Backend
 }

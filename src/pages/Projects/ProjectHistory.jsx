@@ -1,14 +1,11 @@
 // src/pages/Projects/ProjectHistory.jsx
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../contexts/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { getProjectsBySme } from '../../services/projectApi';
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const SME_ID = 'SME-001'; // MVP hardcode – sẽ lấy từ auth context sau
 
 // Thay vì dùng string đơn giản, hãy cấu hình mảng TABS như sau:
 const TABS = [
@@ -264,8 +261,12 @@ const ErrorBanner = ({ message, onRetry }) => (
     <p className="mb-5 max-w-sm text-sm text-red-500">{message}</p>
     <Button
       onClick={onRetry}
-      className="rounded-xl border border-red-200 bg-white px-5 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+      className="inline-flex items-center gap-2 rounded-full bg-red-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
     >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 12a8 8 0 10-4.9 7.4" />
+        <path d="M20 12v-4h-4" />
+      </svg>
       Thử lại
     </Button>
   </div>
@@ -275,6 +276,7 @@ const ErrorBanner = ({ message, onRetry }) => (
 
 const ProjectHistory = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useContext(AuthContext);
 
   // ── State ──
   const [projects, setProjects]   = useState([]);
@@ -284,10 +286,16 @@ const ProjectHistory = () => {
 
   // ── Fetch data ──
   const fetchProjects = async () => {
+    if (!isAuthenticated || !user?.id) {
+      setError('Vui lòng đăng nhập để xem dự án của bạn.');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const data = await getProjectsBySme(SME_ID);
+      const data = await getProjectsBySme(user.id);
       setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('[ProjectHistory] fetchProjects error:', err);
@@ -299,7 +307,7 @@ const ProjectHistory = () => {
 
   useEffect(() => {
     fetchProjects();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
 // ── Derived state ──
   const tabCounts = useMemo(() => {
@@ -349,9 +357,9 @@ const ProjectHistory = () => {
               Lịch sử dự án
             </h1>
             <p className="mt-1 text-sm text-slate-500">
-              Quản lý toàn bộ dự án đã đăng · SME ID:&nbsp;
+              Quản lý toàn bộ dự án đã đăng · Tài khoản:&nbsp;
               <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-600">
-                {SME_ID}
+                {user?.name || 'N/A'} ({user?.id || 'N/A'})
               </code>
             </p>
           </div>
@@ -359,6 +367,7 @@ const ProjectHistory = () => {
           {/* Action */}
           <Button
             onClick={() => navigate('/audit')}
+            disabled={user?.role === 'EXPERT'}
             className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-95"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">

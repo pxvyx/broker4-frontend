@@ -1,6 +1,7 @@
 // src/layouts/MainLayout.jsx
-import React, { useState } from "react";
-import { NavLink, Outlet, Link } from "react-router-dom";
+import React, { useContext, useState } from "react";
+import { NavLink, Outlet, Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../../contexts/AuthContext";
 
 const NAV_LINKS = [
   { to: "/audit", label: "Đánh giá nhu cầu" },
@@ -11,6 +12,9 @@ const NAV_LINKS = [
 
 export default function MainLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
+  const { isAuthenticated, logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -43,7 +47,7 @@ export default function MainLayout() {
 
             {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-1">
-              {NAV_LINKS.map(({ to, label }) => (
+              {NAV_LINKS.filter(l => !(user?.role === 'EXPERT' && l.to === '/audit')).map(({ to, label }) => (
                 <NavLink
                   key={to}
                   to={to}
@@ -63,12 +67,39 @@ export default function MainLayout() {
 
             {/* CTA */}
             <div className="hidden md:flex items-center gap-3">
-              <Link
-                to="/audit"
-                className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold shadow hover:bg-blue-700 active:bg-blue-800 transition-colors duration-150"
-              >
-                Bắt đầu ngay
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={logout}
+                    className="px-4 py-2 rounded-md border border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors duration-150"
+                  >
+                    Đăng xuất
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/dashboard")}
+                    className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold shadow hover:bg-blue-700 active:bg-blue-800 transition-colors duration-150"
+                  >
+                    Dashboard
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/auth/login"
+                    className="px-4 py-2 rounded-md text-sm font-semibold text-gray-700 ring-1 ring-gray-200 hover:bg-gray-100 transition-colors duration-150"
+                  >
+                    Đăng nhập
+                  </Link>
+                  <Link
+                    to="/auth/register"
+                    className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold shadow hover:bg-blue-700 active:bg-blue-800 transition-colors duration-150"
+                  >
+                    Đăng ký
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Mobile hamburger */}

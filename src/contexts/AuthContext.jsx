@@ -1,4 +1,5 @@
 import React, { createContext, useEffect, useMemo, useState } from "react";
+import { logoutFirebase } from "../services/firebaseAuth";
 
 export const AuthContext = createContext({
   user: null,
@@ -43,9 +44,15 @@ export function AuthProvider({ children }) {
     setUser(newUser);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await logoutFirebase();
+    } catch {
+      // nếu Firebase chưa được cấu hình hoặc sign-out thất bại, vẫn tiếp tục clear storage
+    }
     localStorage.removeItem(STORAGE_TOKEN_KEY);
     localStorage.removeItem(STORAGE_USER_KEY);
+    localStorage.removeItem("broker_firebase_token");
     setToken(null);
     setUser(null);
     window.location.href = "/auth/login";

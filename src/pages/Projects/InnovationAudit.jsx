@@ -1,6 +1,7 @@
 // src/pages/Projects/InnovationAudit.jsx
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../../contexts/AuthContext";
 import Button from "../../components/ui/Button";
 import { Card, CardBody } from "../../components/ui/Card";
 import { createProject } from "../../services/projectApi";
@@ -418,6 +419,21 @@ function Step3({ form, set, errors }) {
 
 export default function InnovationAudit() {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
+
+  if (user && user.role === 'EXPERT') {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-8">
+        <div className="max-w-md w-full rounded-2xl border border-gray-200 bg-white p-6 text-center">
+          <h3 className="text-lg font-semibold">Quyền truy cập bị hạn chế</h3>
+          <p className="mt-3 text-sm text-gray-500">Chỉ tài khoản SME mới được phép đăng dự án. Vui lòng chuyển sang tài khoản SME để tiếp tục.</p>
+          <div className="mt-5">
+            <button onClick={() => navigate('/history')} className="rounded-2xl px-4 py-2 bg-blue-600 text-white">Quay lại Dự án của tôi</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(INITIAL_FORM);
@@ -471,6 +487,8 @@ export default function InnovationAudit() {
 
     try {
       const payload = mapFormToPayload(form);
+      // Nếu user đã login và là SME thì ưu tiên dùng sme_id của user
+      if (user?.id) payload.sme_id = user.id;
       const project = await createProject(payload);
 
       navigate("/matching", {

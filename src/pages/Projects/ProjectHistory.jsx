@@ -261,8 +261,12 @@ const ErrorBanner = ({ message, onRetry }) => (
     <p className="mb-5 max-w-sm text-sm text-red-500">{message}</p>
     <Button
       onClick={onRetry}
-      className="rounded-xl border border-red-200 bg-white px-5 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+      className="inline-flex items-center gap-2 rounded-full bg-red-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
     >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 12a8 8 0 10-4.9 7.4" />
+        <path d="M20 12v-4h-4" />
+      </svg>
       Thử lại
     </Button>
   </div>
@@ -363,6 +367,7 @@ const ProjectHistory = () => {
           {/* Action */}
           <Button
             onClick={() => navigate('/audit')}
+            disabled={user?.role === 'EXPERT'}
             className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-95"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">

@@ -2,6 +2,8 @@ import { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import authApi from "../../services/authApi";
 import { AuthContext } from "../../contexts/AuthContext";
+import { firebaseEnabled, auth } from "../../services/firebaseConfig";
+import { signInWithFirebaseEmail } from "../../services/firebaseAuth";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -22,7 +24,14 @@ export default function Login() {
 
     try {
       setLoading(true);
+      let firebaseToken = null;
+      if (firebaseEnabled && auth) {
+        firebaseToken = await signInWithFirebaseEmail(email, password);
+      }
       const data = await authApi.login({ email, password });
+      if (firebaseToken) {
+        localStorage.setItem("broker_firebase_token", firebaseToken);
+      }
       login({ token: data.access_token, user: data.user });
       navigate("/dashboard");
     } catch (err) {

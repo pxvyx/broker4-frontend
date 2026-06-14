@@ -14,6 +14,7 @@ export default function MainLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const { isAuthenticated, logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -46,7 +47,7 @@ export default function MainLayout() {
 
             {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-1">
-              {NAV_LINKS.map(({ to, label }) => (
+              {NAV_LINKS.filter(l => !(user?.role === 'EXPERT' && l.to === '/audit')).map(({ to, label }) => (
                 <NavLink
                   key={to}
                   to={to}

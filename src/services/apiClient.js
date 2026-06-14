@@ -18,6 +18,12 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    const firebaseToken = localStorage.getItem("broker_firebase_token");
+    if (firebaseToken) {
+      config.headers["X-Firebase-Token"] = firebaseToken;
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

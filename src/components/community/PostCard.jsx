@@ -5,6 +5,8 @@ import postApi from "../../services/postApi";
 export default function PostCard({ post, onLikeToggled, onPostDeleted, isNew = false, isRemoving = false }) {
   const { user } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [commentError, setCommentError] = useState("");
   const [isAnimating, setIsAnimating] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isModalAnimatingIn, setIsModalAnimatingIn] = useState(false);
@@ -66,6 +68,30 @@ export default function PostCard({ post, onLikeToggled, onPostDeleted, isNew = f
       alert("Không thể xóa bài viết. Vui lòng thử lại.");
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!user) return;
+    if (!commentText.trim()) {
+      setCommentError("Vui lòng nhập nội dung bình luận.");
+      return;
+    }
+    setCommentError("");
+    setLoading(true);
+    try {
+      const updatedPost = await postApi.addComment(post.id, {
+        user_id: user.id,
+        user_name: user.name,
+        text: commentText.trim(),
+      });
+      onLikeToggled(updatedPost);
+      setCommentText("");
+    } catch (err) {
+      console.error("Lỗi thêm bình luận:", err.message);
+      setCommentError(err.message || "Không thể thêm bình luận.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -159,6 +185,49 @@ export default function PostCard({ post, onLikeToggled, onPostDeleted, isNew = f
             </svg>
             {post.comments.length} Bình luận
           </button>
+        )}
+      </div>
+      <div className="mt-4 border-t border-gray-100 pt-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-gray-900">Bình luận</p>
+          <span className="text-xs text-gray-400">{post.comments?.length ?? 0} bình luận</span>
+        </div>
+        <div className="mt-3 space-y-3">
+          {post.comments && post.comments.length > 0 ? (
+            post.comments.map((comment) => (
+              <div key={comment.comment_id} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                <p className="text-sm font-semibold text-slate-800">{comment.user_name}</p>
+                <p className="text-xs text-slate-500">{new Date(comment.created_at).toLocaleString("vi-VN")}</p>
+                <p className="mt-2 text-sm text-slate-700">{comment.text}</p>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-slate-500">Chưa có bình luận nào. Hãy để lại ý kiến đầu tiên.</p>
+          )}
+        </div>
+        {user && (
+          <div className="mt-4 space-y-3">
+            <textarea
+              value={commentText}
+              onChange={(e) => {
+                setCommentText(e.target.value);
+                setCommentError("");
+              }}
+              rows={3}
+              className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-blue-100"
+              placeholder="Viết bình luận..."
+              disabled={loading}
+            />
+            {commentError && <p className="text-xs text-red-500">{commentError}</p>}
+            <button
+              type="button"
+              onClick={handleAddComment}
+              disabled={loading || !commentText.trim()}
+              className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? "Đang gửi..." : "Gửi bình luận"}
+            </button>
+          </div>
         )}
       </div>
     </div>

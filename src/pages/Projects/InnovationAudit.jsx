@@ -417,18 +417,66 @@ function Step3({ form, set, errors }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function InnovationAudit() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
 
-  if (user && user.role === 'EXPERT') {
+  // 1. CHẶN NGƯỜI DÙNG CHƯA ĐĂNG NHẬP
+  if (!user) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center p-8">
-        <div className="max-w-md w-full rounded-2xl border border-gray-200 bg-white p-6 text-center">
-          <h3 className="text-lg font-semibold">Quyền truy cập bị hạn chế</h3>
-          <p className="mt-3 text-sm text-gray-500">Chỉ tài khoản SME mới được phép đăng dự án. Vui lòng chuyển sang tài khoản SME để tiếp tục.</p>
-          <div className="mt-5">
-            <button onClick={() => navigate('/history')} className="rounded-2xl px-4 py-2 bg-blue-600 text-white">Quay lại Dự án của tôi</button>
+      <div className="min-h-[60vh] flex items-center justify-center p-8 bg-gray-50">
+        <div className="max-w-md w-full rounded-3xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-900">Yêu cầu đăng nhập</h3>
+          <p className="mt-3 text-sm text-gray-500">
+            Bạn cần đăng nhập bằng tài khoản Doanh nghiệp (SME) để có thể tạo dự án và tìm kiếm chuyên gia.
+          </p>
+          <div className="mt-8 flex flex-col gap-3">
+            <button 
+              onClick={() => navigate('/auth/login')} 
+              className="w-full rounded-xl px-4 py-3 bg-blue-600 font-semibold text-white hover:bg-blue-700 transition-colors"
+            >
+              Đăng nhập ngay
+            </button>
+            <button 
+              onClick={() => navigate('/')} 
+              className="w-full rounded-xl px-4 py-3 bg-gray-50 font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              Quay lại trang chủ
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. CHẶN NGƯỜI DÙNG ĐÃ ĐĂNG NHẬP NHƯNG LÀ EXPERT
+  if (user.role === 'EXPERT') {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-8 bg-gray-50">
+        <div className="max-w-md w-full rounded-3xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-900">Quyền truy cập bị hạn chế</h3>
+          <p className="mt-3 text-sm text-gray-500">
+            Chỉ tài khoản SME mới được phép đăng dự án. Tài khoản Chuyên gia chỉ có thể xem và nhận dự án.
+          </p>
+          <div className="mt-8 flex flex-col gap-3">
+            <button 
+              onClick={() => navigate('/history')} 
+              className="w-full rounded-xl px-4 py-3 bg-blue-600 font-semibold text-white hover:bg-blue-700 transition-colors"
+            >
+              Quay lại Bảng điều khiển
+            </button>
           </div>
         </div>
       </div>

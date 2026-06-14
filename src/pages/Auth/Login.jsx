@@ -24,16 +24,21 @@ export default function Login() {
 
     try {
       setLoading(true);
-      let firebaseToken = null;
-      if (firebaseEnabled && auth) {
-        firebaseToken = await signInWithFirebaseEmail(email, password);
-      }
-      const data = await authApi.login({ email, password });
-      if (firebaseToken) {
-        localStorage.setItem("broker_firebase_token", firebaseToken);
-      }
-      login({ token: data.access_token, user: data.user });
-      navigate("/dashboard");
+      
+      // 1. Đăng nhập với Firebase
+      const firebaseToken = await signInWithFirebaseEmail(email, password);
+      
+      if (!firebaseToken) throw new Error("Sai tài khoản hoặc mật khẩu");
+
+      // 2. Chỉ gửi Token cho Backend của mình để xin thông tin User (BỎ PASSWORD)
+      const data = await authApi.login({ 
+        token: firebaseToken 
+      });
+      
+      // 3. Lưu token
+      localStorage.setItem("broker_firebase_token", firebaseToken);
+      login({ token: firebaseToken, user: data.user });
+      navigate("/history");
     } catch (err) {
       setError(err.message || "Đăng nhập không thành công. Vui lòng thử lại.");
     } finally {

@@ -10,6 +10,7 @@ export default function CreatePost({ onPostCreated }) {
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
+    const currentName = user.name || user.company_name || user.expert_name || "Người dùng ẩn danh";
     e.preventDefault();
     setError("");
     setSuccess(false);
@@ -23,7 +24,7 @@ export default function CreatePost({ onPostCreated }) {
       setLoading(true);
       const newPost = await postApi.createPost({
         author_id: user.id,
-        author_name: user.name,
+        author_name: currentName,
         author_role: user.role,
         content: content.trim(),
       });

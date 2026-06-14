@@ -13,15 +13,15 @@ const apiClient = axios.create({
 // ── Request Interceptor ───────────────────────────────────────────────────────
 apiClient.interceptors.request.use(
   (config) => {
-    // Attach auth token nếu có (JWT / session)
-    const token = localStorage.getItem("broker_access_token");
+    // Ưu tiên dùng Firebase Token làm chứng minh thư (Bearer Token) chính thức
+    const firebaseToken = localStorage.getItem("broker_firebase_token");
+    const accessToken = localStorage.getItem("broker_access_token");
+    
+    // Gộp chung: Gửi token nào có sẵn (Ưu tiên Firebase)
+    const token = firebaseToken || accessToken;
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    const firebaseToken = localStorage.getItem("broker_firebase_token");
-    if (firebaseToken) {
-      config.headers["X-Firebase-Token"] = firebaseToken;
     }
 
     return config;
@@ -32,9 +32,8 @@ apiClient.interceptors.request.use(
 // ── Response Interceptor ──────────────────────────────────────────────────────
 apiClient.interceptors.response.use(
   (response) => {
-    const payload = response.data; // { success, message, data }
+    const payload = response.data; 
 
-    // Backend trả HTTP 2xx nhưng success = false → vẫn là lỗi nghiệp vụ
     if (payload?.success === false) {
       const err = new Error(payload.message ?? "Đã xảy ra lỗi từ máy chủ.");
       err.code = "BUSINESS_ERROR";
@@ -42,12 +41,10 @@ apiClient.interceptors.response.use(
       return Promise.reject(err);
     }
 
-    // Bóc vỏ: chỉ trả phần data về cho caller
     return payload?.data !== undefined ? payload.data : payload;
   },
   (error) => {
     if (error.response) {
-      // Lỗi HTTP (4xx, 5xx)
       const { status, data } = error.response;
       const message =
         data?.message ?? httpStatusMessage(status) ?? "Lỗi không xác định.";
@@ -56,9 +53,10 @@ apiClient.interceptors.response.use(
       err.status = status;
       err.payload = data;
 
-      // Token hết hạn / không hợp lệ → clear storage và redirect
+      // SỬA LỖI: Khi Token hết hạn (401), phải xóa SẠCH mọi token
       if (status === 401) {
         localStorage.removeItem("broker_access_token");
+        localStorage.removeItem("broker_firebase_token"); // Đã bổ sung
         window.dispatchEvent(new Event("broker:unauthorized"));
       }
 
@@ -66,15 +64,11 @@ apiClient.interceptors.response.use(
     }
 
     if (error.request) {
-      // Không nhận được response (mất mạng, timeout, CORS …)
-      const err = new Error(
-        "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng."
-      );
+      const err = new Error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.");
       err.code = "NETWORK_ERROR";
       return Promise.reject(err);
     }
 
-    // Lỗi setup request
     return Promise.reject(error);
   }
 );

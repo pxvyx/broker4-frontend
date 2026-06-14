@@ -26,15 +26,23 @@ export default function Register() {
 
     try {
       setLoading(true);
-      let firebaseToken = null;
-      if (firebaseEnabled && auth) {
-        firebaseToken = await registerWithFirebaseEmail(email, password);
-      }
-      const data = await authApi.register({ name, email, password, role });
-      if (firebaseToken) {
-        localStorage.setItem("broker_firebase_token", firebaseToken);
-      }
-      login({ token: data.access_token, user: data.user });
+      
+      // 1. Đăng ký với Firebase
+      const firebaseToken = await registerWithFirebaseEmail(email, password);
+      
+      if (!firebaseToken) throw new Error("Lỗi xác thực Firebase");
+
+      // 2. Chỉ gửi Token và thông tin cơ bản cho Backend của mình (BỎ PASSWORD)
+      const data = await authApi.register({ 
+        token: firebaseToken, 
+        name: name, 
+        email: email, // Gửi email để đối chiếu nếu cần
+        role: role 
+      });
+      
+      // 3. Lưu token để dùng cho các API sau này
+      localStorage.setItem("broker_firebase_token", firebaseToken);
+      login({ token: firebaseToken, user: data.user });
       navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Đăng ký không thành công. Vui lòng thử lại.");
